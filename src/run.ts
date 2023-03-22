@@ -1,6 +1,7 @@
 import "isomorphic-fetch";
 import { AgentPayload } from "./gen/agent_payload_pb.js";
 import * as msgpack from "@msgpack/msgpack";
+import { gzip } from "node-gzip";
 
 async function main() {
     await sendStats();
@@ -59,7 +60,6 @@ async function sendStats() {
 }
 
 async function sendTraces() {
-    // todo: max payload size
     const item = new AgentPayload({
         hostName: agentHostname,
         env,
@@ -94,10 +94,11 @@ async function sendTraces() {
             method: "POST",
             headers: {
                 "content-type": "application/x-protobuf",
+                "content-encoding": "gzip",
                 "X-Datadog-Reported-Languages": "javascript",
                 ...sharedHeaders,
             },
-            body: item.toBinary(),
+            body: await gzip(item.toBinary()),
         }
     );
 

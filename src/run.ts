@@ -26,9 +26,10 @@ async function sendStats() {
             headers: {
                 "X-Datadog-Reported-Languages": "javascript",
                 "content-type": "application/msgpack",
+                "content-encoding": "gzip",
                 ...sharedHeaders,
             },
-            body: msgpack.encode({
+            body: await gzip(msgpack.encode({
                 agentHostname,
                 agentEnv: env,
                 agentVersion,
@@ -47,7 +48,7 @@ async function sendStats() {
                         ],
                     },
                 ],
-            }),
+            })),
         }
     );
 

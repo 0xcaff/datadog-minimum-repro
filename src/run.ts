@@ -1,21 +1,20 @@
 import "isomorphic-fetch";
 import { AgentPayload } from "./gen/agent_payload_pb.js";
-import * as msgpack from "@msgpack/msgpack";
 import { gzip } from "node-gzip";
+import { webcrypto as crypto } from "node:crypto";
 
 async function main() {
-  await sendStats();
+  // await sendStats();
   await sendTraces();
 }
 
+const agentVersion = "7.43.1";
 const sharedHeaders = {
   "dd-api-key": process.env.DD_API_KEY!,
-  "user-agent": "Datadog Trace Agent/6.0.0/aaaaaa",
 };
 
 const agentHostname = "test-host-name";
 const env = "prod";
-const agentVersion = "6.0.0";
 
 async function sendStats() {
   const response = await fetch(
@@ -29,7 +28,7 @@ async function sendStats() {
         ...sharedHeaders,
       },
       body: await gzip(
-        msgpack.encode({
+        JSON.stringify({
           agentHostname,
           agentEnv: env,
           agentVersion,
@@ -68,20 +67,21 @@ async function sendTraces() {
     agentVersion,
     tracerPayloads: [
       {
-        languageName: "javascript",
         chunks: [
           {
             priority: -128,
             spans: [
               {
+                "meta": {
+                  key: "value",
+                },
+
+                resource: "test.test",
                 service: "serviceName",
-                name: "spanName",
-                spanID: 1798345774990023584n,
-                traceID: 5612212936180398772n,
-                type: "web",
-                start: BigInt(Date.now()) * 1000n,
-                duration: 10n * 1000n * 1000n,
-                resource: "resourceName",
+                spanID: generateId(),
+                traceID: generateId(),
+                start: toNanos(new Date()),
+                duration: millisToNanos(1000),
               },
             ],
           },
@@ -97,7 +97,7 @@ async function sendTraces() {
       headers: {
         "content-type": "application/x-protobuf",
         "content-encoding": "gzip",
-        "X-Datadog-Reported-Languages": "javascript",
+        "X-Datadog-Reported-Languages": "",
         ...sharedHeaders,
       },
       body: await gzip(item.toBinary()),
@@ -113,3 +113,19 @@ async function sendTraces() {
 }
 
 main();
+
+function toNanos(date: Date) {
+  return millisToNanos(+date);
+}
+
+function millisToNanos(value: number) {
+  return BigInt(value) * 1000000n
+}
+
+function generateId() {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+
+  const bytesHex = bytes.reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '')
+  return BigInt(`0x${bytesHex}`);
+}

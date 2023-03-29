@@ -96,11 +96,10 @@ async function sendTraces() {
       method: "POST",
       headers: {
         "content-type": "application/x-protobuf",
-        "content-encoding": "gzip",
         "X-Datadog-Reported-Languages": "",
         ...sharedHeaders,
       },
-      body: await gzip(item.toBinary()),
+      body: item.toBinary(),
     }
   );
 

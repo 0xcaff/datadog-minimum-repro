@@ -3,12 +3,9 @@ import { AgentPayload } from "./gen/agent_payload_pb.js";
 import { gzip } from "node-gzip";
 import { Packr } from "msgpackr";
 import { webcrypto as crypto } from "node:crypto";
-import { LogCollapsingLowestDenseDDSketch } from "@datadog/sketches-js";
-
-const service = "serviceName";
 
 async function main() {
-  await sendStats();
+  // await sendStats();
   await sendTraces();
 }
 
@@ -22,80 +19,117 @@ const env = "prod";
 
 async function sendStats() {
   const packr = new Packr();
-
-  const okSummary = new LogCollapsingLowestDenseDDSketch({
-    relativeAccuracy: 0.00775,
-  });
-  okSummary.accept(Number(millisToNanos(1000)));
-
-  const errorSummary = new LogCollapsingLowestDenseDDSketch({
-    relativeAccuracy: 0.00775,
-  });
-
   const response = await fetch(
     "https://trace.agent.datadoghq.com/api/v0.2/stats",
-    {
-      method: "POST",
-      headers: {
-        "X-Datadog-Reported-Languages": "javascript",
-        "content-type": "application/msgpack",
-        "content-encoding": "gzip",
-        ...sharedHeaders,
-      },
-      body: await gzip(
-        packr.pack({
-          AgentHostname: agentHostname,
-          AgentEnv: env,
-          Stats: [
-            {
-              Hostname: agentHostname,
-              Env: env,
-              Version: "1.0.0",
-              Stats: [
+      {
+        method: "POST",
+        headers: {
+          "X-Datadog-Reported-Languages": "javascript",
+          "content-type": "application/msgpack",
+          "content-encoding": "gzip",
+          ...sharedHeaders,
+        },
+        body: await gzip(
+            packr.pack(
                 {
-                  Start: toNanos(new Date()),
-                  Duration: 10000000000,
-                  Stats: [
+                  "AgentHostname": "laptop",
+                  "AgentEnv": "none",
+                  "Stats": [
                     {
-                      Service: service,
-                      Name: resource,
-                      Resource: resource,
-                      HTTPStatusCode: 0,
-                      Type: "",
-                      DBType: "",
-                      Hits: 1,
-                      Errors: 0,
-                      Duration: millisToNanos(1000),
-                      OkSummary: {
-                        type: "Buffer",
-                        data: okSummary.toProto(),
-                      },
-                      ErrorSummary: {
-                        type: "Buffer",
-                        data: errorSummary.toProto(),
-                      },
-                      Synthetics: false,
-                      TopLevelHits: 1,
-                    },
+                      "Hostname": "laptop",
+                      "Env": "none",
+                      "Version": "1.0.0",
+                      "Stats": [
+                        {
+                          "Start": 1682309420000000000,
+                          "Duration": 10000000000,
+                          "Stats": [
+                            {
+                              "Service": "test",
+                              "Name": "test.test",
+                              "Resource": "test.test",
+                              "HTTPStatusCode": 0,
+                              "Type": "",
+                              "DBType": "",
+                              "Hits": 1,
+                              "Errors": 0,
+                              "Duration": 1002406250,
+                              "OkSummary": {
+                                "type": "Buffer",
+                                "data": [
+                                  10,
+                                  9,
+                                  9,
+                                  253,
+                                  74,
+                                  129,
+                                  90,
+                                  191,
+                                  82,
+                                  240,
+                                  63,
+                                  18,
+                                  13,
+                                  18,
+                                  8,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  240,
+                                  63,
+                                  24,
+                                  152,
+                                  16,
+                                  26,
+                                  0
+                                ]
+                              },
+                              "ErrorSummary": {
+                                "type": "Buffer",
+                                "data": [
+                                  10,
+                                  9,
+                                  9,
+                                  253,
+                                  74,
+                                  129,
+                                  90,
+                                  191,
+                                  82,
+                                  240,
+                                  63,
+                                  18,
+                                  0,
+                                  26,
+                                  0
+                                ]
+                              },
+                              "Synthetics": false,
+                              "TopLevelHits": 1
+                            }
+                          ],
+                          "AgentTimeShift": 0
+                        }
+                      ],
+                      "Lang": "",
+                      "TracerVersion": "",
+                      "RuntimeID": "",
+                      "Sequence": 0,
+                      "AgentAggregation": "",
+                      "Service": "",
+                      "ContainerID": "",
+                      "Tags": []
+                    }
                   ],
-                  AgentTimeShift: 0,
-                },
-              ],
-              Lang: "",
-              TracerVersion: "",
-              RuntimeID: "",
-              Sequence: 0,
-              AgentAggregation: "",
-              Service: "",
-              ContainerID: "",
-              Tags: [],
-            },
-          ],
-          AgentVersion: agentVersion,
-          ClientComputed: false,
-        })
-      ),
-    }
+                  "AgentVersion": "7.43.1",
+                  "ClientComputed": false
+                }
+            )
+        )
+      }
   );
 
   const body = await response.text();
@@ -105,8 +139,6 @@ async function sendStats() {
     statusText: response.statusText,
   });
 }
-
-const resource = "test.test";
 
 async function sendTraces() {
   const item = new AgentPayload({
@@ -120,12 +152,12 @@ async function sendTraces() {
             priority: -128,
             spans: [
               {
-                meta: {
+                "meta": {
                   key: "value",
                 },
 
-                resource,
-                service,
+                resource: "test.test",
+                service: "serviceName",
                 spanID: generateId(),
                 traceID: generateId(),
                 start: toNanos(new Date()),
